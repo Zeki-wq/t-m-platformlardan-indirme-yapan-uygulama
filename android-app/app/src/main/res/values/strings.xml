@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">İndirici</string>
+    <string name="tagline">Video &amp; müzik indirici</string>
+    <string name="url_hint">Linki yapıştır (Instagram, YouTube, TikTok…)</string>
+    <string name="mode_video">Video (MP4)</string>
+    <string name="mode_audio">Ses (MP3)</string>
+    <string name="quality_label">Kalite</string>
+    <string name="download">İndir</string>
+    <string name="cancel">İptal</string>
+    <string name="open_downloads">İndirilenler klasörünü aç</string>
+    <string name="paste">Yapıştır</string>
+    <string name="ready">Hazır</string>
+    <string name="preparing">İndirme motoru hazırlanıyor…</string>
+    <string name="last_saved">Son kaydedilen</string>
+    <string name="paste_empty">Panoda link yok</string>
+    <string name="url_required">Geçerli bir link gir</string>
+</resources>

@@ -7,3 +7,11 @@ build/
 dist/
 *.spec
 *.log
+kurulum/
+apk/
+android-app/local.properties
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+desktop.ini
+Thumbs.db

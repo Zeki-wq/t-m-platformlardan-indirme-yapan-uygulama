@@ -812,3 +812,60 @@ select option { background: #151a29; color: var(--text); }
   .modal-thumb { width: 100%; }
   .status-pill #statusText { display: none; }
 }
+
+/* ---------- üst bar aksiyonları ---------- */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- ayarlar ---------- */
+.settings h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+.settings > p.muted {
+  margin: 0 0 16px;
+  line-height: 1.6;
+  font-size: 0.86rem;
+}
+.settings code {
+  background: var(--panel-2);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.88em;
+}
+.settings input[type="text"] {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  outline: none;
+  font-size: 0.86rem;
+}
+.settings input[type="text"]:focus {
+  border-color: rgba(124, 92, 255, 0.6);
+}
+.hint-small {
+  font-size: 0.77rem;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 7px 0 0;
+}
+.hint-small.ok { color: var(--ok); }
+.hint-small.err { color: var(--err); }
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+@media (max-width: 620px) {
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .status-pill span:last-child { display: none; }
+  .settings-actions { flex-direction: column-reverse; }
+  .settings-actions .btn { width: 100%; }
+}

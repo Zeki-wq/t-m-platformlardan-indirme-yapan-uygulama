@@ -369,6 +369,118 @@
     modalBody.innerHTML = "";
   }
 
+  /* ------------------------------- ayarlar ------------------------------- */
+  async function openSettings() {
+    modal = null;
+    modalEl.hidden = false;
+    document.body.classList.add("locked");
+    modalBody.innerHTML = loadingHtml();
+    try {
+      const settings = await api("/api/settings");
+      renderSettings(settings);
+    } catch (error) {
+      modalBody.innerHTML = `<div class="errorbox">${esc(error.message)}</div>`;
+    }
+  }
+
+  function renderSettings(settings) {
+    const options = (settings.browsers || []).map((item) => `
+      <option value="${esc(item.value)}" ${item.value === settings.cookies_from_browser ? "selected" : ""}>
+        ${esc(item.label)}
+      </option>`).join("");
+
+    const activeNote = settings.active
+      ? `<p class="hint-small ok">Etkin çerez kaynağı: ${esc(settings.active)}</p>`
+      : `<p class="hint-small">Şu an çerez kullanılmıyor — giriş gerektiren siteler çalışmaz.</p>`;
+
+    modalBody.innerHTML = `
+      <div class="settings">
+        <h3 id="modalTitle">⚙ Ayarlar</h3>
+        <p class="muted">
+          Instagram, TikTok, Facebook gibi siteler çoğu zaman giriş (çerez) ister.
+          Tarayıcını seç ya da dışa aktardığın <code>cookies.txt</code> dosyasını göster.
+        </p>
+        ${activeNote}
+
+        <div class="field">
+          <label>Çerezleri al — tarayıcı</label>
+          <select id="setBrowser">${options}</select>
+          <p class="hint-small">
+            Seçtiğin tarayıcıda ilgili siteye giriş yapmış olmalısın.
+            Tarayıcı açıkken çerez dosyası kilitli olabilir; o durumda tarayıcıyı tamamen kapatıp
+            <b>Test et</b>'e bas.
+          </p>
+        </div>
+
+        <div class="field">
+          <label>veya cookies.txt dosyası (tam yol)</label>
+          <input id="setCookiesFile" type="text" spellcheck="false"
+                 placeholder="C:\\Users\\Zeki\\Downloads\\cookies.txt"
+                 value="${esc(settings.cookies_file || "")}">
+          <p class="hint-small">
+            Chrome/Edge için <b>“Get cookies.txt LOCALLY”</b> uzantısıyla instagram.com çerezlerini
+            dışa aktarabilirsin. Dosya yolu varsa tarayıcı seçiminden önce gelir.
+          </p>
+        </div>
+
+        <div class="modal-actions settings-actions">
+          <button type="button" class="btn ghost" id="testCookies">Test et</button>
+          <button type="button" class="btn primary" id="saveSettings">Kaydet</button>
+        </div>
+        <div id="settingsResult" class="hint-small"></div>
+        <p class="hint-small muted">Ayar dosyası: ${esc(settings.config_path || "ayarlar.json")}</p>
+      </div>`;
+  }
+
+  async function saveSettings(showToast = true) {
+    const browser = $("#setBrowser") ? $("#setBrowser").value : "";
+    const file = $("#setCookiesFile") ? $("#setCookiesFile").value.trim() : "";
+    const result = $("#settingsResult");
+    try {
+      await api("/api/settings", {
+        method: "POST",
+        body: JSON.stringify({ cookies_from_browser: browser, cookies_file: file }),
+      });
+      if (result) {
+        result.textContent = "Kaydedildi. Giriş gerektiren siteler artık çalışmalı.";
+        result.className = "hint-small ok";
+      }
+      if (showToast) toast("Ayarlar kaydedildi.", "ok");
+      loadStatus();
+      return true;
+    } catch (error) {
+      if (result) {
+        result.textContent = error.message;
+        result.className = "hint-small err";
+      } else {
+        toast(error.message, "err");
+      }
+      return false;
+    }
+  }
+
+  async function testCookies() {
+    const result = $("#settingsResult");
+    if (result) {
+      result.textContent = "Test ediliyor…";
+      result.className = "hint-small";
+    }
+    if (!(await saveSettings(false))) return;
+    try {
+      const data = await api("/api/test-cookies", { method: "POST" });
+      if (result) {
+        result.textContent = `Çerezler okundu: ${data.count} adet` +
+          (data.instagram ? ` (Instagram: ${data.instagram})` : " — Instagram çerezi görünmüyor, sitede giriş yapmış mıydın?");
+        result.className = "hint-small ok";
+      }
+    } catch (error) {
+      if (result) {
+        result.textContent = error.message;
+        result.className = "hint-small err";
+      }
+    }
+  }
+
   async function startDownload() {
     if (!modal || !modal.info) return;
     const info = modal.info;
@@ -548,7 +660,15 @@
     if (event.target.closest("[data-close]")) closeModal();
   });
 
-  modalBody.addEventListener("click", (event) => {
+  modalBody.addEventListener("click", async (event) => {
+    if (event.target.closest("#saveSettings")) {
+      await saveSettings();
+      return;
+    }
+    if (event.target.closest("#testCookies")) {
+      await testCookies();
+      return;
+    }
     if (!modal) return;
 
     const tabButton = event.target.closest("[data-tab]");
@@ -661,4 +781,7 @@
   loadStatus();
   pollLoop();
   window.setInterval(loadStatus, 60000);
+
+  $("#settingsBtn").addEventListener("click", openSettings);
+  if (location.hash === "#ayarlar") openSettings();
 })();

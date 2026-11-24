@@ -24,18 +24,24 @@ import yt_dlp
 from flask import Flask, jsonify, request, send_from_directory
 from yt_dlp.utils import DownloadCancelled
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 FROZEN = bool(getattr(sys, "frozen", False))
 if FROZEN:
     BASE_DIR = Path(sys.executable).resolve().parent
     RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", BASE_DIR))
+    _home = Path.home()
+    _downloads = next(
+        (folder for folder in (_home / "Downloads", _home / "İndirilenler") if folder.exists()),
+        _home,
+    )
+    DOWNLOAD_DIR = _downloads / "Indirici"
 else:
     BASE_DIR = Path(__file__).resolve().parent
     RESOURCE_DIR = BASE_DIR
+    DOWNLOAD_DIR = BASE_DIR / "indirilenler"
 
 STATIC_DIR = RESOURCE_DIR / "static"
-DOWNLOAD_DIR = BASE_DIR / "indirilenler"
 CONFIG_PATH = BASE_DIR / "ayarlar.json"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -64,8 +70,24 @@ def find_ffmpeg() -> str | None:
 FFMPEG = find_ffmpeg()
 
 
+DEFAULT_CONFIG = {"cookies_from_browser": "", "cookies_file": ""}
+
+BROWSERS = [
+    {"value": "", "label": "Kullanma (girişsiz)"},
+    {"value": "chrome", "label": "Chrome"},
+    {"value": "edge", "label": "Microsoft Edge"},
+    {"value": "firefox", "label": "Firefox"},
+    {"value": "brave", "label": "Brave"},
+    {"value": "opera", "label": "Opera"},
+    {"value": "vivaldi", "label": "Vivaldi"},
+    {"value": "chromium", "label": "Chromium"},
+    {"value": "safari", "label": "Safari (macOS)"},
+]
+BROWSER_VALUES = {item["value"] for item in BROWSERS}
+
+
 def load_config() -> dict:
-    cfg = {"cookies_from_browser": ""}
+    cfg = dict(DEFAULT_CONFIG)
     if CONFIG_PATH.exists():
         try:
             data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
@@ -84,6 +106,26 @@ def load_config() -> dict:
 CONFIG = load_config()
 
 
+def save_config() -> None:
+    try:
+        CONFIG_PATH.write_text(
+            json.dumps(CONFIG, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def active_cookie_source() -> str:
+    """Etkin çerez kaynağını döndürür: 'dosya:yol', 'tarayıcı:ad' veya ''."""
+    cookie_file = str(CONFIG.get("cookies_file") or "").strip()
+    if cookie_file and Path(cookie_file).is_file():
+        return f"dosya:{cookie_file}"
+    browser = str(CONFIG.get("cookies_from_browser") or "").strip()
+    if browser:
+        return f"tarayıcı:{browser}"
+    return ""
+
+
 def base_opts() -> dict:
     opts = {
         "quiet": True,
@@ -97,7 +139,10 @@ def base_opts() -> dict:
     }
     if FFMPEG:
         opts["ffmpeg_location"] = FFMPEG
-    if CONFIG.get("cookies_from_browser"):
+    cookie_file = str(CONFIG.get("cookies_file") or "").strip()
+    if cookie_file and Path(cookie_file).is_file():
+        opts["cookiefile"] = cookie_file
+    elif CONFIG.get("cookies_from_browser"):
         opts["cookiesfrombrowser"] = (str(CONFIG["cookies_from_browser"]),)
     return opts
 
@@ -143,6 +188,26 @@ def friendly_error(exc: Exception | str) -> str:
         return msg + " — FFmpeg bulunamadı. baslat.bat dosyasını çalıştırıp tekrar dene."
     if "unsupported url" in low:
         return msg + " — Bu site/link desteklenmiyor."
+    if (
+        "empty media response" in low
+        or "login required" in low
+        or "requires authentication" in low
+        or "rate-limit" in low
+        or "rate limit" in low
+    ):
+        return (
+            msg
+            + " — Bu içerik giriş (çerez) istiyor. Sağ üstteki ⚙ Ayarlar'dan tarayıcını seç "
+            "(Chrome/Edge) ya da cookies.txt dosyanı göster, sonra tekrar dene."
+        )
+    if "ip address is blocked" in low or "blocked from accessing" in low:
+        return msg + " — Bu site IP adresini engelliyor (VPN/ağ kısıtı). Farklı bir bağlantı dene."
+    if "could not copy" in low and "cookie" in low:
+        return (
+            msg
+            + " — Tarayıcı açık olduğu için çerez dosyası kilitli. Tarayıcıyı tamamen kapatıp "
+            "tekrar dene ya da ⚙ Ayarlar'dan cookies.txt dosyası kullan."
+        )
     if "private" in low:
         return msg + " — İçerik gizli/özel olduğu için indirilemiyor."
     if "unavailable" in low:
@@ -420,8 +485,78 @@ def api_status():
         ffmpeg_path=FFMPEG,
         ytdlp=yt_dlp.version.__version__,
         download_dir=str(DOWNLOAD_DIR),
-        cookies=bool(CONFIG.get("cookies_from_browser")),
+        cookies=bool(active_cookie_source()),
+        cookies_source=active_cookie_source(),
+        cookies_from_browser=CONFIG.get("cookies_from_browser") or "",
+        cookies_file=CONFIG.get("cookies_file") or "",
     )
+
+
+def settings_payload() -> dict:
+    return {
+        "cookies_from_browser": CONFIG.get("cookies_from_browser") or "",
+        "cookies_file": CONFIG.get("cookies_file") or "",
+        "browsers": BROWSERS,
+        "active": active_cookie_source(),
+        "config_path": str(CONFIG_PATH),
+    }
+
+
+@app.get("/api/settings")
+def api_get_settings():
+    return jsonify(settings_payload())
+
+
+@app.post("/api/settings")
+def api_save_settings():
+    data = request.get_json(silent=True) or {}
+    browser = str(data.get("cookies_from_browser") or "").strip().lower()
+    if browser and browser not in BROWSER_VALUES:
+        return jsonify(error="Geçersiz tarayıcı seçimi."), 400
+
+    cookies_file = str(data.get("cookies_file") or "").strip().strip('"')
+    if cookies_file and not Path(cookies_file).is_file():
+        return jsonify(error=f"Dosya bulunamadı: {cookies_file}"), 400
+
+    CONFIG["cookies_from_browser"] = browser
+    CONFIG["cookies_file"] = cookies_file
+    save_config()
+    INFO_CACHE.clear()
+    payload = settings_payload()
+    payload["ok"] = True
+    return jsonify(payload)
+
+
+@app.post("/api/test-cookies")
+def api_test_cookies():
+    data = request.get_json(silent=True) or {}
+    browser = str(data.get("cookies_from_browser") or CONFIG.get("cookies_from_browser") or "").strip().lower()
+    cookies_file = str(data.get("cookies_file") or CONFIG.get("cookies_file") or "").strip().strip('"')
+
+    if not browser and not cookies_file:
+        return jsonify(error="Önce bir tarayıcı seç ya da cookies.txt dosyasının yolunu gir."), 400
+
+    try:
+        if cookies_file:
+            if not Path(cookies_file).is_file():
+                return jsonify(error=f"Dosya bulunamadı: {cookies_file}"), 400
+            import http.cookiejar
+
+            jar = http.cookiejar.MozillaCookieJar(cookies_file)
+            jar.load(ignore_discard=True, ignore_expires=True)
+            count = sum(1 for _ in jar)
+            insta = sum(1 for c in jar if "instagram" in (c.domain or ""))
+            return jsonify(ok=True, count=count, instagram=insta, source="dosya")
+
+        from yt_dlp.cookies import extract_cookies_from_browser
+
+        jar = extract_cookies_from_browser(browser)
+        count = sum(1 for _ in jar)
+        insta = sum(1 for c in jar if "instagram" in (c.domain or ""))
+        return jsonify(ok=True, count=count, instagram=insta, source=browser)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify(error=friendly_error(exc)), 502
+
 
 
 @app.get("/api/search")

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 title Indirici - EXE derleme
 cd /d "%~dp0"
@@ -23,7 +23,6 @@ echo Indirici.exe derleniyor... (birkac dakika surebilir)
 pyinstaller --noconfirm --clean --windowed --name Indirici ^
     --icon "assets\indirici.ico" ^
     --add-data "static;static" ^
-    --add-data "ayarlar.json;." ^
     --collect-all yt_dlp ^
     --collect-all imageio_ffmpeg ^
     --collect-all webview ^
@@ -40,5 +39,24 @@ if errorlevel 1 (
 
 echo.
 echo Tamamlandi: dist\Indirici\Indirici.exe
-echo Bu klasoru istedigin yere tasiyabilirsin.
+
+set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
+if not exist "%ISCC%" set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+if not exist "%ISCC%" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+
+if exist "%ISCC%" (
+    echo.
+    echo Kurulum dosyasi olusturuluyor...
+    "%ISCC%" kurulum.iss
+    if errorlevel 1 (
+        echo Kurulum dosyasi olusturulamadi.
+    ) else (
+        echo Kurulum hazir: kurulum\Indirici-Setup-1.2.0.exe
+    )
+) else (
+    echo.
+    echo Inno Setup 6 bulunamadi; sadece exe derlendi.
+    echo Kurulum dosyasi icin: https://jrsoftware.org/isdl.php
+)
+
 pause
