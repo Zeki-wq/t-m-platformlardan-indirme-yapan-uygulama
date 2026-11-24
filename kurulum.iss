@@ -4,7 +4,7 @@
 #define MyAppName "İndirici"
 #define MyAppVersion "1.2.0"
 #define MyAppPublisher "Zeki"
-#define MyAppURL "https://github.com/Zeki-wq/intro"
+#define MyAppURL "https://github.com/Zeki-wq/t-m-platformlardan-indirme-yapan-uygulama"
 #define MyAppExeName "Indirici.exe"
 
 [Setup]

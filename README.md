@@ -1,4 +1,4 @@
-# İndirici
+﻿# İndirici
 
 **Windows masaüstü + Android** için video ve müzik indirici. Linki yapıştır ya da arama yap; videoları **MP4**, müzikleri **MP3** (ve daha fazlası) olarak istediğin kalitede indir. Masaüstü sürümü tarayıcı sekmesi değil, kendi penceresinde açılan bir uygulamadır.
 
@@ -13,7 +13,7 @@
 | **Windows** | `Indirici-Setup-1.2.0.exe` | Kurulum sihirbazı (yönetici gerekmez) |
 | **Android** | `Indirici-1.0.0.apk` | Android 7.0 (API 24) ve üzeri |
 
-İndirme bağlantıları deponun **Releases** bölümünde: <https://github.com/Zeki-wq/intro/releases>
+İndirme bağlantıları deponun **Releases** bölümünde: <https://github.com/Zeki-wq/t-m-platformlardan-indirme-yapan-uygulama/releases>
 
 - **Windows:** Setup dosyasını çalıştır → İleri → Kur. Masaüstü ve Başlat menüsüne kısayol eklenir.
 - **Android:** APK'yı telefona indir → aç → “Bilinmeyen kaynaklara izin ver” → Kur.
@@ -172,10 +172,10 @@ python desktop.py
 
 ## GitHub
 
-Depo: <https://github.com/Zeki-wq/intro>
+Depo: <https://github.com/Zeki-wq/t-m-platformlardan-indirme-yapan-uygulama>
 
 ```bat
-git clone https://github.com/Zeki-wq/intro.git
+git clone https://github.com/Zeki-wq/t-m-platformlardan-indirme-yapan-uygulama.git
 cd intro
 baslat.bat
 ```
