@@ -306,6 +306,11 @@
       ? `<div class="note">Oynatma listesi · ${info.count ? esc(info.count) + " video" : "tüm videolar"}</div>`
       : "";
 
+    const noAudio = !info.is_playlist && info.has_audio === false;
+    const noAudioNote = noAudio
+      ? `<div class="note warn">Bu videoda ses parçası yok (bazı Instagram reels'leri sessizdir) — MP3 alınamaz, sadece video indirilebilir.</div>`
+      : "";
+
     const audioFormats = [
       ["mp3", "MP3 — her yerde çalar"],
       ["m4a", "M4A (AAC) — daha iyi kalite/boyut"],
@@ -335,10 +340,12 @@
       </div>
 
       ${playlistNote}
+      ${noAudioNote}
 
       <div class="tabs">
         <button type="button" data-tab="video" class="${!isAudio ? "active" : ""}">🎬 Video (MP4)</button>
-        <button type="button" data-tab="audio" class="${isAudio ? "active" : ""}">🎵 Müzik (MP3)</button>
+        <button type="button" data-tab="audio" class="${isAudio ? "active" : ""}"
+          ${noAudio ? 'disabled title="Bu videoda ses parçası yok"' : ""}>🎵 Müzik (MP3)</button>
       </div>
 
       <div class="field" id="qualityField" ${isLossless ? "hidden" : ""}>

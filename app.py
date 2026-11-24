@@ -208,6 +208,11 @@ def friendly_error(exc: Exception | str) -> str:
             + " — Tarayıcı açık olduğu için çerez dosyası kilitli. Tarayıcıyı tamamen kapatıp "
             "tekrar dene ya da ⚙ Ayarlar'dan cookies.txt dosyası kullan."
         )
+    if "unable to obtain file audio codec" in low or "no audio" in low:
+        return (
+            "Bu videoda ses parçası yok (bazı Instagram reels'leri sessizdir). "
+            "Aynı linki Video (MP4) olarak indirmeyi dene."
+        )
     if "private" in low:
         return msg + " — İçerik gizli/özel olduğu için indirilemiyor."
     if "unavailable" in low:
@@ -257,6 +262,14 @@ def video_heights(info: dict) -> list[int]:
     return [h for h in heights if 120 <= h <= 4320]
 
 
+def has_audio_stream(info: dict) -> bool:
+    """İçerikte indirilebilir bir ses akışı var mı?"""
+    formats = info.get("formats") or []
+    if not formats:
+        return (info.get("acodec") or "").lower() not in ("", "none")
+    return any((f.get("acodec") or "").lower() not in ("", "none") for f in formats)
+
+
 def single_payload(info: dict) -> dict:
     heights = video_heights(info)
     return {
@@ -271,6 +284,7 @@ def single_payload(info: dict) -> dict:
         "first_url": "",
         "video_qualities": heights or [1080, 720, 480, 360],
         "audio_bitrates": AUDIO_BITRATES,
+        "has_audio": has_audio_stream(info),
     }
 
 
@@ -293,6 +307,7 @@ def info_payload(url: str) -> dict:
             "first_url": first_url,
             "video_qualities": [2160, 1440, 1080, 720, 480, 360],
             "audio_bitrates": AUDIO_BITRATES,
+            "has_audio": True,
         }
         if first_url:
             try:
@@ -300,6 +315,7 @@ def info_payload(url: str) -> dict:
                 options = single_payload(first_info)
                 payload["video_qualities"] = options["video_qualities"]
                 payload["audio_bitrates"] = options["audio_bitrates"]
+                payload["has_audio"] = options["has_audio"]
                 payload["thumbnail"] = payload["thumbnail"] or options["thumbnail"]
             except Exception:
                 pass
@@ -424,6 +440,19 @@ def run_job(job: dict) -> None:
 
     job["status"] = "starting"
     job["started"] = time.time()
+
+    if job["mode"] == "audio" and not job.get("playlist"):
+        try:
+            probe = cached_info(job["url"])
+            if probe.get("_type") != "playlist" and not has_audio_stream(probe):
+                job["status"] = "error"
+                job["error"] = (
+                    "Bu videoda ses parçası yok (bazı Instagram reels'leri sessizdir). "
+                    "Aynı linki Video (MP4) olarak indirmeyi dene."
+                )
+                return
+        except Exception:
+            pass
     try:
         opts = build_ydl_opts(job)
         with yt_dlp.YoutubeDL(opts) as ydl:

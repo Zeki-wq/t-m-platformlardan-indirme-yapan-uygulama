@@ -685,6 +685,12 @@ button, input, select { font: inherit; color: inherit; }
   color: #fff;
 }
 
+.tabs button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
 .field { margin-bottom: 16px; }
 
 .field > label {
@@ -736,6 +742,12 @@ select option { background: #151a29; color: var(--text); }
   background: rgba(124, 92, 255, 0.08);
   color: #c3b7ff;
   font-size: 0.8rem;
+}
+
+.note.warn {
+  border-color: rgba(255, 176, 32, 0.35);
+  background: rgba(255, 176, 32, 0.1);
+  color: #ffd79a;
 }
 
 .errorbox {

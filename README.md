@@ -150,6 +150,9 @@ Gönderi herkese açık değil ya da giriş istiyor. **⚙ Ayarlar**'dan çerez 
 **TikTok “IP address is blocked”**
 TikTok bazı ağları/IP'leri engelliyor. Mobil veri veya farklı bir ağ dene.
 
+**MP3 indirirken “Bu videoda ses parçası yok”**
+Bazı Instagram reels'leri sessizdir (kaynakta hiç ses akışı yoktur). Aynı linki **Video (MP4)** olarak indirebilirsin; MP3'e dönüştürülecek ses bulunmadığı için uygulama bunu baştan söyler.
+
 **Bir site aniden çalışmıyorsa**
 Siteler sık değişir; yt-dlp'yi güncellemek genelde çözer. Python sürümünde sayfanın altındaki **“yt-dlp'yi güncelle”**, Android'de **“yt-dlp'yi güncelle”** düğmesini kullan.
 

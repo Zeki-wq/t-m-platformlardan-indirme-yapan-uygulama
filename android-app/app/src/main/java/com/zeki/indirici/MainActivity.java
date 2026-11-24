@@ -344,7 +344,11 @@ public class MainActivity extends AppCompatActivity {
         final boolean audio = rgMode.getCheckedRadioButtonId() == R.id.rbAudio;
         final String quality = String.valueOf(spQuality.getSelectedItem());
 
-        final File work = new File(getExternalFilesDir(null), "is");
+        File baseDir = getExternalFilesDir(null);
+        if (baseDir == null) {
+            baseDir = getFilesDir();
+        }
+        final File work = new File(baseDir, "is");
         if (!work.exists() && !work.mkdirs()) {
             toast("Geçici klasör oluşturulamadı");
             return;
@@ -559,6 +563,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (low.contains("login") || low.contains("cookies") || low.contains("sign in")) {
             return "Bu içerik giriş gerektiriyor (özel ya da yaş kısıtlı). Herkese açık bir link dene.";
+        }
+        if (low.contains("unable to obtain file audio codec") || low.contains("no audio")) {
+            return "Bu videoda ses parçası yok (bazı Instagram reels'leri sessizdir). Videoyu MP4 olarak indirebilirsin.";
         }
         if (low.contains("private")) {
             return "İçerik gizli olduğu için indirilemiyor.";
